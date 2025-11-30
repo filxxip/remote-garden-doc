@@ -1,0 +1,74 @@
+@startuml ESP Device Activation Mechanism
+title ESP Device Activation and Flashing Process
+
+note over Script, ESP
+  **Technologies Used:**
+  • esptool.py - ESP32 flashing tool
+  • espressif/idf - Official ESP-IDF Docker container
+  • mklittlefs - LittleFS filesystem builder
+  • LittleFS/SPIFFS - Embedded filesystem
+  • Docker - Containerization platform
+end note
+
+participant "flash_device.sh\nScript" as Script
+participant "espressif/idf\nContainer" as IDF
+participant "ESP Device\n(via USB)" as ESP
+participant "python-prepare-esp\nContainer" as Prepare
+participant "API Backend" as API
+participant "Database" as DB
+participant "mklittlefs\nContainer" as LittleFS
+
+== Step 1: Read MAC Address ==
+Script -> IDF: Launch espressif/idf container
+IDF -> ESP: Execute esptool.py read_mac
+ESP -> IDF: Return physical MAC address
+IDF -> Script: MAC address
+Script -> Script: Store MAC for registration
+
+== Step 2: Generate Device Credentials ==
+Script -> Script: Generate random device secret (128-bit)
+Script -> Script: Create config files:\n• device_id.txt (MAC)\n• device_secret.txt (secret)\n• ca.crt (CA certificate)
+
+== Step 3: Register Device in Backend ==
+Script -> Prepare: Launch python-prepare-esp container
+Prepare -> API: POST /admin/esp/create\n{mac, secret}
+API -> API: Validate admin token
+API -> DB: Create ESP device record\n(MAC, secret)
+DB -> API: Device created
+API -> DB: Create default sensors/actuators
+DB -> API: Devices provisioned
+API -> Prepare: Success response
+Prepare -> Script: Registration complete
+
+== Step 4: Build LittleFS Filesystem ==
+Script -> LittleFS: Launch mklittlefs container
+LittleFS -> LittleFS: Create LittleFS image from:\n• device_id.txt\n• device_secret.txt\n• ca.crt
+LittleFS -> Script: littlefs.bin ready
+
+== Step 5: Erase ESP Flash ==
+Script -> IDF: Execute esptool.py erase_flash
+IDF -> ESP: Erase entire flash memory
+ESP -> IDF: Flash erased
+IDF -> Script: Erase complete
+
+== Step 6: Flash Complete Firmware ==
+Script -> IDF: Flash bootloader (0x1000)
+IDF -> ESP: Write bootloader.bin
+Script -> IDF: Flash partition table (0x8000)
+IDF -> ESP: Write partition-table.bin
+Script -> IDF: Flash OTA data
+IDF -> ESP: Write ota_data_initial.bin
+Script -> IDF: Flash application
+IDF -> ESP: Write app.bin
+Script -> IDF: Flash LittleFS filesystem
+IDF -> ESP: Write littlefs.bin
+IDF -> Script: All flashing complete
+
+== Step 7: Device Ready ==
+ESP -> ESP: Restart with new firmware
+ESP -> ESP: Load configuration from LittleFS:\n• MAC address\n• Device secret\n• CA certificate
+ESP -> ESP: Device ready for Bluetooth pairing
+ESP -> ESP: Can authenticate to backend
+ESP -> ESP: Ready to work in ecosystem
+
+@enduml

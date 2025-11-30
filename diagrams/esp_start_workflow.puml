@@ -1,0 +1,80 @@
+@startuml ESP Device Startup and Provisioning
+title ESP Device First Boot and Operational Startup
+
+note over ESP, MQTT
+  **Technologies Used:**
+  • BLE GATT - Bluetooth Low Energy Generic Attribute Profile
+  • NVS - Non-Volatile Storage (ESP32 persistent memory)
+  • LittleFS - Embedded filesystem for certificates
+  • TLS/mTLS - Mutual TLS authentication
+  • CSR - Certificate Signing Request (X.509)
+  • MQTT - Secure messaging over TLS
+end note
+
+participant "ESP32 Device" as ESP
+participant "Mobile App\n(BLE Client)" as App
+participant "NVS Storage" as NVS
+participant "LittleFS" as FS
+participant "WiFi Network" as WiFi
+participant "API Backend\n(CSR Signer)" as API
+participant "MQTT Broker\n(TLS)" as MQTT
+
+== Phase 1: Unconfigured State - BLE Pairing ==
+ESP -> ESP: First boot - no WiFi config
+ESP -> ESP: Enable BLE module
+ESP -> ESP: Create GATT server with 3 characteristics:\n• SSID\n• Password\n• UserKey
+ESP -> ESP: Start BLE advertising
+App -> ESP: Scan and connect via BLE
+App -> ESP: Write SSID to GATT characteristic
+ESP -> NVS: Store SSID
+App -> ESP: Write Password to GATT characteristic
+ESP -> NVS: Store Password
+App -> ESP: Write UserKey to GATT characteristic
+ESP -> NVS: Store UserKey
+ESP -> FS: Save UserKey to LittleFS\n(permanent account link)
+ESP -> ESP: All credentials received
+ESP -> ESP: Disable BLE connections
+
+== Phase 2: WiFi Connection ==
+ESP -> WiFi: Connect using SSID/Password from NVS
+WiFi -> ESP: Connection successful
+ESP -> ESP: WiFi connected
+
+== Phase 3: TLS Provisioning ==
+ESP -> FS: Read device_id (MAC)
+ESP -> FS: Read device_secret
+ESP -> ESP: Generate private key
+ESP -> ESP: Generate CSR (Certificate Signing Request)
+ESP -> API: POST /api/esp-devices/register\n{device_id, device_secret, userKey, CSR}
+API -> API: Verify device_secret
+API -> API: Verify userKey
+API -> API: Sign CSR with CA
+API -> ESP: Return signed certificate
+ESP -> FS: Save client certificate to LittleFS
+ESP -> FS: Save private key to LittleFS
+ESP -> ESP: TLS credentials complete
+
+== Phase 4: MQTT Connection with TLS ==
+ESP -> FS: Load CA certificate
+ESP -> FS: Load client certificate
+ESP -> FS: Load private key
+ESP -> ESP: Initialize MQTT client with TLS config
+ESP -> MQTT: Connect with mutual TLS authentication
+MQTT -> MQTT: Verify client certificate
+MQTT -> ESP: Connection established (TLS secured)
+ESP -> MQTT: Publish "conn" message
+MQTT -> API: Forward connection event
+
+== Phase 5: Normal Operation ==
+ESP -> ESP: Resume sensor reading tasks
+ESP -> ESP: Resume camera tasks
+ESP -> ESP: Resume actuator control tasks
+loop Continuous Operation
+    ESP -> ESP: Read sensors (temp, humidity, etc.)
+    ESP -> MQTT: Publish sensor data
+    ESP -> ESP: Capture camera frame (if enabled)
+    ESP -> MQTT: Publish camera frames
+    ESP -> MQTT: Listen for control commands
+end
+
+@enduml

@@ -1,0 +1,79 @@
+@startuml Camera Frame Processing
+title Camera Frame Processing - ESP32 to Mobile App
+
+note over Camera, App
+  **Technologies Used:**
+  • OV2640 - 2MP camera module with JPEG encoder
+  • PSRAM - External RAM for buffering large images
+  • MQTT - Publish/Subscribe messaging protocol
+  • JPEG - Image format with 0xFFD8 header
+  • Base64 - Binary-to-text encoding for WebSocket
+  • WebSocket - Real-time bidirectional communication
+end note
+
+participant "ESP32 Camera\n(OV2640)" as Camera
+participant "ESP32\n(PSRAM)" as ESP
+participant "MQTT Broker" as MQTT
+participant "Backend\nCamera Handler" as Backend
+participant "Backend\nBuffer" as Buffer
+participant "WebSocket" as WS
+participant "Mobile App" as App
+
+== Frame Capture on ESP32 ==
+Camera -> ESP: Capture photo
+ESP -> ESP: Get JPEG buffer from camera
+ESP -> ESP: Store frame in PSRAM
+ESP -> ESP: Check frame size
+
+alt Large frame (needs splitting)
+    ESP -> ESP: Split into ~4KB parts
+    ESP -> ESP: Generate frame_id
+    
+    loop For each part
+        ESP -> MQTT: Publish to {mac}/device/camera/frame/{frame_id}/part/{n}
+        MQTT -> Backend: Forward part {n}
+        Backend -> Buffer: Store part {n} in memory
+        
+        alt Part fails to send
+            ESP -> ESP: Keep in cache
+            note right: Will retry on next flush
+        end
+    end
+    
+    ESP -> MQTT: Publish to {mac}/device/camera/frame/{frame_id}/end
+    MQTT -> Backend: Forward /end marker
+    
+else Small frame (single message)
+    ESP -> MQTT: Publish entire frame to {mac}/device/camera/frame/{frame_id}
+    MQTT -> Backend: Forward complete frame
+end
+
+== Frame Assembly on Backend ==
+Backend -> Backend: Receive /end marker
+Backend -> Buffer: Retrieve all parts for frame_id
+Backend -> Backend: Sort parts by part number
+Backend -> Backend: Concatenate parts into single buffer
+Backend -> Backend: Validate JPEG format\n(check 0xFFD8 header)
+
+alt Valid JPEG
+    Backend -> Backend: Optionally save to disk\n(frame_{index}_{timestamp}.jpg)
+    Backend -> Backend: Convert to Base64
+    Backend -> WS: Send camera_frame event\n{timestamp, image_base64, format: "jpg"}
+    WS -> App: Forward camera frame
+    App -> App: Decode Base64
+    App -> App: Display frame
+    
+    Backend -> Buffer: Clear frame_id buffer
+    
+else Invalid JPEG or incomplete
+    Backend -> Backend: Log error
+    Backend -> Buffer: Ignore and discard
+end
+
+alt Buffer overflow (too many fragments)
+    Backend -> Buffer: Check buffer size
+    Backend -> Buffer: Clear old/incomplete frames
+    note right: Prevent memory issues
+end
+
+@enduml
