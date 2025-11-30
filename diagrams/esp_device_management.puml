@@ -1,0 +1,50 @@
+@startuml ESP Device Management
+title ESP Device Management
+
+actor User
+participant "Mobile App" as App
+participant "API Backend" as API
+participant "Database" as DB
+participant "MQTT Broker" as MQTT
+participant "ESP Device" as ESP
+
+== Viewing ESP Devices ==
+User -> App: Open devices screen
+App -> API: GET /api/esp-devices/
+API -> DB: Fetch user's ESP devices
+DB -> API: Return device list
+API -> App: ESP device data
+App -> User: Display ESP device list
+
+== Assigning ESP to Garden ==
+User -> App: Select "Assign to Garden"
+App -> User: Show garden selection
+User -> App: Choose garden
+App -> API: POST /api/esp-devices/{esp_id}/assign
+API -> DB: Update ESP with garden_id
+DB -> API: Updated
+API -> App: Success
+App -> User: Show device in garden
+
+== Unassigning ESP from Garden ==
+User -> App: Select "Unassign from Garden"
+App -> API: POST /api/esp-devices/{esp_id}/unassign
+API -> DB: Remove garden assignment
+DB -> API: Updated
+API -> App: Success
+App -> User: Update device status
+
+== Resetting ESP Device ==
+User -> App: Select "Reset Device"
+App -> User: Show confirmation
+User -> App: Confirm reset
+App -> API: POST /api/esp-devices/{esp_id}/reset
+API -> DB: Clear assignments and credentials
+DB -> API: Updated
+API -> MQTT: Publish reset command to {mac}/reset
+MQTT -> ESP: Forward reset command
+ESP -> ESP: Reset to factory state
+API -> App: Success
+App -> User: Update device status
+
+@enduml

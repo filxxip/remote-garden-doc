@@ -1,0 +1,36 @@
+@startuml Mobile Login
+title Mobile App Login via Google Authentication
+
+actor User
+participant "Mobile App" as App
+participant "Google OAuth" as Google
+participant "API Backend" as API
+participant "Database" as DB
+
+User -> App: Open app and tap "Login with Google"
+App -> Google: Request Google authentication
+Google -> User: Show Google login screen
+User -> Google: Enter credentials
+Google -> App: Return ID token
+
+App -> API: POST /api/auth/login/google\n{id_token}
+API -> Google: Verify ID token
+Google -> API: Token valid, return user info
+
+alt First-time user
+    API -> DB: Create new user account
+    DB -> API: User created
+else Existing user
+    API -> DB: Find user by Google sub
+    DB -> API: User found
+end
+
+API -> API: Generate access token
+API -> API: Generate refresh token
+API -> DB: Store refresh token
+API -> App: Return {access_token, refresh_token}
+
+App -> App: Store tokens securely
+App -> User: Navigate to home screen
+
+@enduml

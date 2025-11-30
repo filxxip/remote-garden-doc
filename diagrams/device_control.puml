@@ -1,0 +1,41 @@
+@startuml Device Control
+title Device Control
+
+actor User
+participant "Mobile App" as App
+participant "API Backend" as API
+participant "MQTT Broker" as MQTT
+participant "ESP Device" as ESP
+participant "Database" as DB
+
+== Viewing Devices ==
+User -> App: View garden dashboard
+App -> API: GET /api/devices/garden/{garden_id}
+API -> DB: Fetch devices for garden's ESPs
+DB -> API: Return device list
+API -> App: Device data with status
+App -> User: Display device list
+
+== Controlling All Devices in Garden ==
+User -> App: Tap "Turn On All" for actuator type
+App -> API: POST /api/devices/garden/{garden_id}/{actuator}/on
+API -> DB: Get all ESPs in garden
+DB -> API: ESP list
+API -> MQTT: Publish control command to all ESPs
+MQTT -> ESP: Forward command
+ESP -> ESP: Activate actuator
+API -> App: Success status
+App -> User: Update device status to active
+
+== Controlling Specific ESP Device ==
+User -> App: Tap control for specific ESP
+App -> API: POST /api/devices/esp/{esp_id}/{actuator}/{action}
+API -> DB: Get ESP details
+DB -> API: ESP data
+API -> MQTT: Publish control command to ESP
+MQTT -> ESP: Forward command
+ESP -> ESP: Execute action on actuator
+API -> App: Success status
+App -> User: Update device status
+
+@enduml

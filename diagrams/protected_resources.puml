@@ -1,0 +1,21 @@
+@startuml Protected Resources
+title Accessing Protected Resources
+
+actor User
+participant "Mobile App" as App
+participant "API Backend" as API
+participant "Database" as DB
+
+User -> App: Request data from app
+App -> API: GET /api/protected-endpoint\nAuthorization: Bearer <access_token>
+API -> API: Decode JWT access token
+API -> API: Verify token signature with SECRET_KEY
+API -> API: Check token expiration
+API -> API: Extract user_id from "sub_id" claim
+API -> API: Verify "sub_type" is "user"
+API -> DB: Process request with user context
+DB -> API: Return requested data
+API -> App: Return data with status 200
+App -> User: Display data
+
+@enduml

@@ -1,0 +1,52 @@
+@startuml Garden Management
+title Garden Management
+
+actor User
+participant "Mobile App" as App
+participant "API Backend" as API
+participant "Database" as DB
+participant "Agent Service" as Agent
+participant "Scheduler" as Scheduler
+
+== Creating New Garden ==
+User -> App: Tap "Add Garden"
+App -> User: Show garden form
+User -> App: Enter garden name
+App -> API: POST /api/gardens/\n{name}
+API -> DB: Create garden record
+DB -> API: Garden created
+API -> Agent: Create AI agent for garden
+Agent -> DB: Agent provisioned
+API -> Scheduler: Register default schedule trigger
+API -> App: Return garden details
+App -> User: Display new garden in list
+
+== Viewing Gardens ==
+User -> App: Open app
+App -> API: GET /api/gardens/
+API -> DB: Fetch user's gardens
+DB -> API: Return gardens list
+API -> App: Garden data
+App -> User: Display gardens
+
+== Updating Garden ==
+User -> App: Tap "Edit Garden"
+App -> User: Show edit form
+User -> App: Change name
+App -> API: PUT /api/gardens/{garden_id}\n{name}
+API -> DB: Update garden name
+DB -> API: Updated
+API -> App: Return updated garden
+App -> User: Display updated name
+
+== Deleting Garden ==
+User -> App: Long-press garden
+App -> User: Show delete confirmation
+User -> App: Confirm deletion
+App -> API: DELETE /api/gardens/{garden_id}
+API -> DB: Remove garden and related data
+DB -> API: Deleted
+API -> App: Success status
+App -> User: Remove garden from list
+
+@enduml

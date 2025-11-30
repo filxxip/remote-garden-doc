@@ -1,0 +1,20 @@
+@startuml Token Refresh
+title Refreshing Expired Access Token
+
+actor User
+participant "Mobile App" as App
+participant "API Backend" as API
+participant "Database" as DB
+
+User -> App: Use app (access token expired)
+App -> App: Detect access token expired
+App -> API: POST /api/auth/refresh\n{refresh_token}
+API -> DB: Validate refresh token
+DB -> API: Token valid, return user
+API -> API: Check token expiration date
+API -> API: Generate new access token
+API -> App: Return {access_token, refresh_token}
+App -> App: Update stored access token
+App -> App: Retry original request with new token
+
+@enduml

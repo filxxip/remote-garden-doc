@@ -1,0 +1,57 @@
+@startuml Schedules
+title Schedule Management
+
+actor User
+participant "Mobile App" as App
+participant "API Backend" as API
+participant "Database" as DB
+
+== Viewing Schedules ==
+User -> App: Open schedules
+App -> API: GET /api/schedules/{garden_id}/
+API -> DB: Fetch schedules
+DB -> API: Return schedule list
+API -> App: Schedule data
+App -> User: Display schedules with timing and actions
+
+== Creating New Schedule ==
+User -> App: Set cron expression and action
+App -> API: POST /api/schedules/{garden_id}/\n{cron, action}
+API -> DB: Create scheduled task
+DB -> API: Task created
+API -> App: Return task_id
+App -> User: Add schedule to list
+
+== Creating Weekly Schedule ==
+User -> App: Select days and time
+App -> API: POST /api/schedules/weekly/{garden_id}/
+API -> DB: Create weekly schedule
+DB -> API: Task created
+API -> App: Return task_id
+App -> User: Display weekly schedule
+
+== Updating Schedule ==
+User -> App: Change cron expression
+App -> API: PUT /api/schedules/{task_id}/\n{cron}
+API -> DB: Update schedule timing
+DB -> API: Updated
+API -> App: Success
+App -> User: Refresh schedule display
+
+== Toggling Schedule ==
+User -> App: Tap toggle switch
+App -> API: POST /api/schedules/{task_id}/toggle/
+API -> DB: Toggle schedule state
+DB -> API: Updated
+API -> App: Success
+App -> User: Update toggle UI
+
+== Deleting Schedule ==
+User -> App: Confirm deletion
+App -> API: DELETE /api/schedules/{task_id}/
+API -> DB: Remove schedule permanently
+DB -> API: Deleted
+API -> App: Success
+App -> User: Remove from list
+
+@enduml

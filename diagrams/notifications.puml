@@ -1,0 +1,34 @@
+@startuml Notifications
+title Notifications
+
+actor User
+participant "Mobile App" as App
+participant "API Backend" as API
+participant "Database" as DB
+
+== Viewing All Notifications ==
+User -> App: Open notifications screen
+App -> API: GET /api/notifications/
+API -> DB: Fetch user's notifications
+DB -> API: Return notification list
+API -> App: Notification data
+App -> User: Display notification list
+
+== Viewing Alert Notifications ==
+User -> App: Filter by "Alerts"
+App -> API: GET /api/notifications/alerts/
+API -> DB: Fetch alert-type notifications
+DB -> API: Return alerts
+API -> App: Alert notifications
+App -> User: Display urgent warnings
+
+== Viewing Reminders ==
+User -> App: Filter by "Reminders"
+App -> API: GET /api/notifications/reminders/
+API -> DB: Fetch reminder notifications
+DB -> API: Return reminders
+API -> App: Reminder data
+App -> User: Display tasks and schedules
+
+
+@enduml

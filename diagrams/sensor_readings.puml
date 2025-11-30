@@ -1,0 +1,35 @@
+@startuml Sensor Readings
+title Sensor Readings
+
+actor User
+participant "Mobile App" as App
+participant "API Backend" as API
+participant "Database" as DB
+
+== Viewing Latest Sensor Reading ==
+User -> App: View garden dashboard
+App -> API: GET /api/readings/garden/{garden_id}/device-type/{type}/last
+API -> DB: Query most recent reading for device type
+DB -> API: Return latest reading
+API -> App: Reading data with timestamp
+App -> User: Display current sensor value
+
+== Viewing Historical Data ==
+User -> App: Tap "View History"
+App -> User: Show date range picker
+User -> App: Select start and end date
+App -> API: GET /api/readings/garden/{garden_id}/device-type/{type}\n?start_time=X&end_time=Y&offset=0&limit=100
+API -> DB: Query readings with filters
+DB -> API: Return paginated readings
+API -> App: Historical data
+App -> User: Display as chart or list
+
+== Paginating Through Readings ==
+User -> App: Scroll down
+App -> API: GET /api/readings/garden/{garden_id}/device-type/{type}\n?offset=100&limit=100
+API -> DB: Query next page
+DB -> API: Return next batch
+API -> App: More readings
+App -> User: Append to list
+
+@enduml

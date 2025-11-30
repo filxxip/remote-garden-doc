@@ -1,0 +1,28 @@
+@startuml Admin Access Denied
+title Access Denied for Non-Admin User
+
+actor NonAdmin as "Non-Admin User"
+participant "Admin App" as AdminApp
+participant "Google OAuth" as Google
+participant "API Backend" as API
+participant "Database" as DB
+
+NonAdmin -> AdminApp: Open admin app
+NonAdmin -> AdminApp: Click "Sign in with Google"
+AdminApp -> Google: Request authentication
+Google -> NonAdmin: Show login screen
+NonAdmin -> Google: Enter credentials
+Google -> AdminApp: Return valid ID token
+
+AdminApp -> API: POST /api/auth/login/google\n{id_token}
+API -> Google: Verify ID token
+Google -> API: Token valid, return user info
+API -> DB: Find user by Google sub
+DB -> API: User found
+API -> API: Check if user is admin
+API -> API: User is NOT admin
+API -> AdminApp: Return access denied error
+AdminApp -> NonAdmin: Display "Access Denied" dialog
+AdminApp -> NonAdmin: Remain on login screen
+
+@enduml

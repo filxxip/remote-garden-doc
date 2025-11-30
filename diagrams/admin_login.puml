@@ -1,0 +1,32 @@
+@startuml Admin Login
+title Admin Desktop App Login with Google
+
+actor Admin
+participant "Admin App" as AdminApp
+participant "Google OAuth" as Google
+participant "API Backend" as API
+participant "Database" as DB
+
+Admin -> AdminApp: Open admin app
+AdminApp -> Admin: Display login screen
+Admin -> AdminApp: Click "Sign in with Google"
+AdminApp -> Google: Request Google authentication
+Google -> Admin: Show Google login screen
+Admin -> Google: Enter credentials
+Google -> AdminApp: Return valid ID token
+
+AdminApp -> API: POST /api/auth/login/google\n{id_token}
+API -> Google: Verify ID token
+Google -> API: Token valid, return user info
+API -> DB: Find user by Google sub
+DB -> API: User found
+API -> API: Validate admin privileges
+API -> API: Generate access token
+API -> API: Generate refresh token
+API -> DB: Store refresh token
+API -> AdminApp: Return {access_token, refresh_token}
+
+AdminApp -> AdminApp: Store JWT token
+AdminApp -> Admin: Display admin panel
+
+@enduml

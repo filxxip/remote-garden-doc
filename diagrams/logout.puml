@@ -1,0 +1,14 @@
+@startuml User Logout
+title User Logout
+
+actor User
+participant "Mobile App" as App
+
+User -> App: Tap "Logout" button
+App -> App: Clear access token from secure storage
+App -> App: Clear refresh token from secure storage
+App -> App: Clear user session data
+App -> App: Navigate to login screen
+App -> User: Display login screen
+
+@enduml

@@ -1,0 +1,32 @@
+@startuml Device Registration
+title ESP Device Registration
+
+actor Admin
+participant "Admin App" as AdminApp
+participant "Docker Container" as Docker
+participant "esp-prepare" as Prepare
+participant "API Backend" as API
+participant "Database" as DB
+participant "ESP Device" as ESP
+
+Admin -> AdminApp: Select USB port and firmware version
+Admin -> AdminApp: Click "Register Device"
+AdminApp -> Docker: Launch esp-prepare container
+
+Docker -> Prepare: Execute prepare script
+Prepare -> Prepare: Generate MAC and secret
+Prepare -> Prepare: Create SPIFFS files with credentials
+
+Prepare -> API: POST /api/admin/esp/create\n{MAC, secret}
+API -> API: Validate admin token
+API -> DB: Create device with sensors/actuators
+DB -> API: Device created
+
+Prepare -> Prepare: Download firmware
+Prepare -> ESP: Flash firmware and SPIFFS to device
+ESP -> ESP: Reboot with new firmware
+
+Prepare -> AdminApp: Flash completed successfully
+AdminApp -> Admin: Show success dialog
+
+@enduml

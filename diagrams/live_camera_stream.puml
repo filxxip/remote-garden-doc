@@ -1,0 +1,26 @@
+@startuml Live Camera Stream
+title Live Camera Stream via WebSocket
+
+actor User
+participant "Mobile App" as App
+participant "WebSocket" as WS
+participant "API Backend" as API
+participant "MQTT Broker" as MQTT
+participant "ESP Camera" as ESP
+
+User -> App: Open garden camera view
+App -> WS: Establish WebSocket connection
+WS -> API: Connection established
+
+ESP -> MQTT: Publish frame to {mac}/device/camera/frame/{index}/#
+MQTT -> API: Receive frame on topic
+API -> API: Process JPEG frame
+API -> API: Convert to base64
+API -> WS: Send "camera_frame" event\n{timestamp, image_base64}
+WS -> App: Forward camera_frame event
+App -> App: Decode base64 image
+App -> User: Display frame in real-time
+
+note over ESP, App: Process repeats for continuous video stream
+
+@enduml

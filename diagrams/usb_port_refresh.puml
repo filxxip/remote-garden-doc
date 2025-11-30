@@ -1,0 +1,14 @@
+@startuml USB Port Refresh
+title Refreshing Available USB Ports
+
+actor Admin
+participant "Admin App" as AdminApp
+
+Admin -> AdminApp: On device registration screen
+Admin -> AdminApp: Click "Refresh" button
+AdminApp -> AdminApp: Scan system for serial ports
+AdminApp -> AdminApp: Get list of available COM/tty ports
+AdminApp -> AdminApp: Update port dropdown list
+AdminApp -> Admin: Display available USB devices
+
+@enduml
